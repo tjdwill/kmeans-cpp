@@ -5,22 +5,20 @@
 #include <set>
 // #include <iostream>
 
-namespace Classify { namespace KMeans {
+namespace Classify::KMeans {
     using Eigen::MatrixXd; using Eigen::VectorXi;
     
-    const double _eps = std::numeric_limits<double>::epsilon();
-    const double SMALLEST_THRESH = 20 * _eps;
 
 
-    /* KMeansRet */
-    KMeansRet::KMeansRet(VectorXi labels, MatrixXd centroids, OpStatus status_code)
+    /* ClusterRet */
+    ClusterRet::ClusterRet(VectorXi labels, MatrixXd centroids, OpStatus status_code)
         : d_labels(labels), d_centroids(centroids), d_status(status_code) {}
-    KMeansRet::KMeansRet(OpStatus status_code)
+    ClusterRet::ClusterRet(OpStatus status_code)
         : d_status(status_code) {}
 
-    const VectorXi& KMeansRet::labels() const { return d_labels; }
-    const MatrixXd& KMeansRet::centroids() const { return d_centroids; }
-    const OpStatus& KMeansRet::status() const { return d_status; }
+    const VectorXi& ClusterRet::labels() const { return d_labels; }
+    const MatrixXd& ClusterRet::centroids() const { return d_centroids; }
+    const OpStatus& ClusterRet::status() const { return d_status; }
 
     /* Clustering  */
     // Given data and centroids, assign each data point a label. Labels range from [0..n)
@@ -120,7 +118,7 @@ choose_row:
         return centroids;
     }
 
-    const KMeansRet kcluster(
+    const ClusterRet cluster(
             const MatrixXd& input_data,
             unsigned int k,
             unsigned int ndim,
@@ -131,7 +129,7 @@ choose_row:
         /* Validation */
         // NOTE: consider splitting Classify::OpStatus::InvalidInput into multiple specific cases.
         // You'd lose generality, however, and would need to demote it to the Classify::KMeans namespace.
-        if (input_data.size() == 0) { return KMeansRet(OpStatus::Success); }
+        if (input_data.size() == 0) { return ClusterRet(OpStatus::Success); }
 
         // PERF: Is there a way to make this a view instead of a copy?
         MatrixXd data = input_data.block(0, 0, input_data.rows(),ndim);
@@ -141,13 +139,13 @@ choose_row:
                 threshold < SMALLEST_THRESH ||
                 ndim < 1 || ndim > (unsigned int) data.cols() ||
                 k < 1 || k > data.rows()
-        ) { return KMeansRet(OpStatus::InvalidInput); }
+        ) { return ClusterRet(OpStatus::InvalidInput); }
 
         if (initial_centroids.size() == 0) 
             // Randomly select centroids w/o replacement
             cluster_centroids = choose_centroids(data, k, ndim);
         else if (initial_centroids.rows() != k || initial_centroids.cols() < ndim)
-            return KMeansRet(OpStatus::InvalidInput); 
+            return ClusterRet(OpStatus::InvalidInput); 
         else 
             cluster_centroids = initial_centroids.block(0, 0, initial_centroids.rows(), ndim);
 
@@ -167,9 +165,9 @@ choose_row:
             }
         }
         if (success) {
-            return KMeansRet(labels, cluster_centroids, OpStatus::Success);
+            return ClusterRet(labels, cluster_centroids, OpStatus::Success);
         } else {
-            return KMeansRet(labels, cluster_centroids, OpStatus::MaxIterationsExceeded);
+            return ClusterRet(labels, cluster_centroids, OpStatus::MaxIterationsExceeded);
         }
-    }  // kcluster
-}} // namespace Classify
+    }  // cluster
+} // namespace Classify

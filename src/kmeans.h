@@ -21,20 +21,25 @@ namespace Classify {
         Success,
         InvalidInput,
         MaxIterationsExceeded,
-        _Unset
+        Unset
     };
     namespace KMeans {
+        constexpr double _eps = std::numeric_limits<double>::epsilon();
+        constexpr double SMALLEST_THRESH = 20 * _eps;
         /*
          *  The type that composes the results of a k-means clustering operation.
-         *  d_labels: A vector containing the cluster labels of each row of the input data.
-         *  d_centroids: 
+         *  d_labels: 
+         *      A vector containing the cluster labels of each row of the input data.
+         *  d_centroids:
+         *      The calculated centroids. Each row index corresponds to a cluster group.
+         *  d_status:
+         *      The operation status.
          */
         using Eigen::MatrixXd; using Eigen::VectorXi;
-        struct KMeansRet {
-            private:
-                const VectorXi d_labels { VectorXi(0) }; 
-                const MatrixXd d_centroids { MatrixXd(0, 0) };  // the resultant cluster centroids
-                const OpStatus d_status { OpStatus::_Unset };
+        class ClusterRet {
+            const VectorXi d_labels { VectorXi(0) }; 
+            const MatrixXd d_centroids { MatrixXd(0, 0) };  // the resultant cluster centroids
+            const OpStatus d_status { OpStatus::Unset };
 
             public:
             /* Constructors, Destructors, Movers */
@@ -42,8 +47,8 @@ namespace Classify {
             // If so, how can I make it so that it's an ownership transfer?
             // Also, I don't actually want the user to be able to construct objects of this type,
             // so how could I restrict the constructor to internal use only?
-            KMeansRet(VectorXi labels, MatrixXd centroids, OpStatus status_code);
-            KMeansRet(OpStatus status_code);
+            ClusterRet(VectorXi labels, MatrixXd centroids, OpStatus status_code);
+            ClusterRet(OpStatus status_code);
 
             /* Methods */
             const VectorXi& labels() const;
@@ -77,7 +82,7 @@ namespace Classify {
          *          the status as Classify::OpStatus::MaxIterationsExceeded.
          *
          */
-        const KMeansRet kcluster(
+        const ClusterRet cluster(
                 const MatrixXd& data,
                 unsigned int k = 2,
                 unsigned int ndim = 1,
