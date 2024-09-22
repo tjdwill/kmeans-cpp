@@ -91,6 +91,9 @@ namespace Classify {
         
         /// Given data and centroids, assign each data point a label. Labels range from [0..n)
         VectorXi assign_labels(const MatrixXd& data, const MatrixXd& centroids);
+
+        /// Given data and labels, calculate the centroid of each cluster
+        MatrixXd calculate_cluster_centroids(const MatrixXd& data, const VectorXi& labels, unsigned int k, unsigned int ndim); 
     } // namespace KMeans
 } // namespace Classify
 

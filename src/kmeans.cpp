@@ -103,37 +103,73 @@ choose_row:
         return centroids;
     };
     
-//
-//    const KMeansRet kcluster(
-//            const MatrixXd& input_data,
-//            unsigned int k,
-//            unsigned int ndim,
-//            unsigned int max_iterations,
-//            double threshold,
-//            MatrixXd initial_centroids
-//     ) {
-//        /* Validation */
-//        // NOTE: consider splitting Classify::OpStatus::InvalidInput into multiple specific cases.
-//        // You'd lose generality, however, and would need to demote it to the Classify::KMeans namespace.
-//        if (input_data.size() == 0) { return KMeansRet(OpStatus::Success); }
-//        MatrixXd data = input_data.block(input_data.rows(), ndim, 0,0);
-//
-//        if (
-//                threshold < SMALLEST_THRESH ||
-//                ndim < 1 || ndim > (unsigned int) data.cols() ||
-//                k < 1 || k > data.rows()
-//        ) { return KMeansRet(OpStatus::InvalidInput); }
-//
-//        if (initial_centroids.size() == 0) {
-//            // Randomly select centroids w/o replacement
-//            initial_centroids = choose_centroids(data, k, ndim);
-//        } else if (initial_centroids.rows() < k || initial_centroids.cols() < ndim) {
-//            return KMeansRet(OpStatus::InvalidInput); 
-//        }
-//
-//        
-//    }
-//
-//
+    /// Given data and labels, calculates centroids for a given cluster.
+    MatrixXd calculate_cluster_centroids(const MatrixXd& data, const VectorXi& labels, unsigned int k, unsigned int ndim) {
+        MatrixXd centroids = Eigen::MatrixXd::Zero(k, ndim);
+        VectorXi clust_count = Eigen::VectorXi::Zero(k);
+        for (long i = 0; i < labels.size(); ++i) {
+            int label = labels(i);
+            centroids(label, Eigen::all) += data(i, Eigen::all);
+            clust_count(label) += 1;
+        }
+        for (int i = 0; i < clust_count.size(); ++i) {
+            int num_entries = clust_count(i);
+            assert(num_entries != 0);
+            centroids(i, Eigen::all) /= num_entries;
+        }
+        return centroids;
+    }
 
+    const KMeansRet kcluster(
+            const MatrixXd& input_data,
+            unsigned int k,
+            unsigned int ndim,
+            unsigned int max_iterations,
+            double threshold,
+            MatrixXd initial_centroids
+     ) {
+        /* Validation */
+        // NOTE: consider splitting Classify::OpStatus::InvalidInput into multiple specific cases.
+        // You'd lose generality, however, and would need to demote it to the Classify::KMeans namespace.
+        if (input_data.size() == 0) { return KMeansRet(OpStatus::Success); }
+
+        // PERF: Is there a way to make this a view instead of a copy?
+        MatrixXd data = input_data.block(0, 0, input_data.rows(),ndim);
+        MatrixXd cluster_centroids;
+
+        if (
+                threshold < SMALLEST_THRESH ||
+                ndim < 1 || ndim > (unsigned int) data.cols() ||
+                k < 1 || k > data.rows()
+        ) { return KMeansRet(OpStatus::InvalidInput); }
+
+        if (initial_centroids.size() == 0) 
+            // Randomly select centroids w/o replacement
+            cluster_centroids = choose_centroids(data, k, ndim);
+        else if (initial_centroids.rows() != k || initial_centroids.cols() < ndim)
+            return KMeansRet(OpStatus::InvalidInput); 
+        else 
+            cluster_centroids = initial_centroids.block(0, 0, initial_centroids.rows(), ndim);
+
+        
+        bool success = false;
+        VectorXi labels;
+        for (unsigned int count = 0; count < max_iterations; ++count) {
+            labels = assign_labels(data, cluster_centroids);
+            MatrixXd next_centroids = calculate_cluster_centroids(data, labels, k, ndim);
+            Eigen::VectorXd centroid_motion = (next_centroids - cluster_centroids).rowwise().norm();
+            auto check = (centroid_motion.array() > threshold);
+            if (check.any()) {
+                cluster_centroids = next_centroids;
+            } else {
+                success = true;
+                break;
+            }
+        }
+        if (success) {
+            return KMeansRet(labels, cluster_centroids, OpStatus::Success);
+        } else {
+            return KMeansRet(labels, cluster_centroids, OpStatus::MaxIterationsExceeded);
+        }
+    }  // kcluster
 }} // namespace Classify
