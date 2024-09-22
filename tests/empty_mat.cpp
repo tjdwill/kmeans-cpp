@@ -1,5 +1,5 @@
 // This is a file for experimenting with Eigen features. 
-// Basically, this is to help me build intuition for how to use the library.
+// Basically, this is to help me build intuition for using the library.
 #include <iostream>
 #include <Eigen/Dense>
 
