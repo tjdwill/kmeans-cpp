@@ -20,7 +20,7 @@ int main() {
     std::cout << "4x4 Block mat:\n" << a << "\n";
 
     // Try building a matrix with push operator
-    // DIDN'T work. Instead, create an empty array 
+    // Update: Didn't work. Instead, create an empty array 
     // and fill in each row as needed.
     Eigen::Matrix4d build = Eigen::Matrix4d::Zero();
     Eigen::Vector4d arr = Eigen::Vector4d::LinSpaced(1, 16);
