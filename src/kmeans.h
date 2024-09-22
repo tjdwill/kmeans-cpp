@@ -62,7 +62,8 @@ namespace Classify {
          *
          *      initial_centroids
          *          Allows the user to provide an initial guess for the cluster centroids. If default value is used, the initial centroids are selected
-         *          randomly from among the input data.
+         *          randomly from among the input data. If the user *does* provide initial centroids, he/she should be sure all elements are unique.
+         *          Checks are not performed for equivalence amongst rows.
          *
          *      ndim
          *          The number of dimensions to cluster (# of columns to take into consideration)
@@ -84,6 +85,7 @@ namespace Classify {
                 double threshold = 20*std::numeric_limits<double>::epsilon(),
                 MatrixXd initial_centroids = MatrixXd(0, 0)
          );
+        MatrixXd choose_centroids(const MatrixXd& data, unsigned int k, unsigned int ndim);
     } // namespace KMeans
 } // namespace Classify
 
