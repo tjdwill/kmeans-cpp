@@ -85,7 +85,12 @@ namespace Classify {
                 double threshold = 20*std::numeric_limits<double>::epsilon(),
                 MatrixXd initial_centroids = MatrixXd(0, 0)
          );
+
+        /// Given input data, select elements of data to serve as initial means
         MatrixXd choose_centroids(const MatrixXd& data, unsigned int k, unsigned int ndim);
+        
+        /// Given data and centroids, assign each data point a label. Labels range from [0..n)
+        VectorXi assign_labels(const MatrixXd& data, const MatrixXd& centroids);
     } // namespace KMeans
 } // namespace Classify
 

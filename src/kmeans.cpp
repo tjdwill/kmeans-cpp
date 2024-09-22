@@ -24,10 +24,28 @@ namespace Classify { namespace KMeans {
 
     /* Clustering  */
     // Given data and centroids, assign each data point a label. Labels range from [0..n)
-    // VectorXi assign_labels(const MatrixXd& data, const MatrixXd& centroids) {};
+    VectorXi assign_labels(const MatrixXd& data, const MatrixXd& centroids) {
+        VectorXi labels = VectorXi::Zero(data.rows());
+        int row_idx = 0;
+        for (auto row: data.rowwise()) {
+            double distance = std::numeric_limits<double>::max();
+            int i = 0;
+            int label = -1;
+            for (auto centroid: centroids.rowwise()) {
+                auto dist = (row - centroid).norm();
+                if (dist < distance) {
+                   label = i;  
+                   distance = dist;
+                }
+                ++i;
+            }
+            labels(row_idx) = label;
+            ++row_idx;
+        }
+        return labels;
+    }
 
     /// Given input data, select elements of data to serve as initial means
-    /// Due to how this is implemented, it is not possible to have a centroid be the origin.
     MatrixXd choose_centroids(const MatrixXd& data, unsigned int k, unsigned int ndim) {
         // TODO: I don't want to use longs if not needed. Can I get away with [u]ints?
         unsigned long max_range = (unsigned long) data.rows();
