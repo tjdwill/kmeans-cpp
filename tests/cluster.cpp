@@ -9,7 +9,7 @@ int main() {
     MatrixXd m = MatrixXd::Random(2000000, 4);
     // std::cout << "Input Matrix:\n" << m << "\n\n";
     std::cout << "Input Matrix: (rows, col) = (" << m.rows() << ", " << m.cols() << ")"  << "\n\n";
-    unsigned int k=4, ndim=3;
+    int k=4, ndim=3;
     double threshold = 0.01;
     ClusterRet cluster_data = cluster(m, k, ndim, 100, threshold);
     bool max_iters = false;
@@ -29,7 +29,11 @@ int main() {
     // std::cout << "Labels: " << cluster_data.labels().transpose() << "\n\n";
     std::cout << "Labels (sz): " << cluster_data.labels().size() << "\n\n";
     std::cout << "Centroids:\n" << cluster_data.centroids() << "\n";
-    std::cout << "Max Iterations Exceeded (t/f): " << max_iters << "\n" ;
+    std::cout << "Max Iterations Exceeded (t/f): ";
+    if (max_iters)
+        std::cout << "true" << "\n";
+    else
+        std::cout << "false" << "\n";
 }
 
 /* ./kmeans.x

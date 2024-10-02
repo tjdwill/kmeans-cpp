@@ -3,13 +3,11 @@
 #include <experimental/random>
 #include <limits>
 #include <set>
-// #include <iostream>
+#include <stdexcept>
 
-namespace Classify::KMeans {
+namespace Classify { namespace KMeans {
     using Eigen::MatrixXd; using Eigen::VectorXi;
     
-
-
     /* ClusterRet */
     ClusterRet::ClusterRet(VectorXi labels, MatrixXd centroids, OpStatus status_code)
         : d_labels(labels), d_centroids(centroids), d_status(status_code) {}
@@ -44,36 +42,38 @@ namespace Classify::KMeans {
     }
 
     /// Given input data, select elements of data to serve as initial means
-    MatrixXd choose_centroids(const MatrixXd& data, unsigned int k, unsigned int ndim) {
-        // TODO: I don't want to use longs if not needed. Can I get away with [u]ints?
-        unsigned long max_range = (unsigned long) data.rows();
+    MatrixXd choose_centroids(const MatrixXd& data, int k, int ndim) {
+        long max_range = (long) data.rows();
         assert(max_range > 0);
-        const auto MAX_ATTEMPTS = std::max(max_range/10,  (unsigned long) 10000);
+        const auto MAX_ATTEMPTS = std::max(max_range/10,  (long) 10000);
         
         // Create a set of row indices. As we attempt to fill in the centroid matrix, we want to simulate
         // selection rows without replacement. This is done by removing items from the set.
-        std::set<unsigned long> choices {};
+        std::set<long> choices {};
         assert(choices.empty());
-        for (unsigned long i = 0; i < max_range; ++i)
+        for (long i = 0; i < max_range; ++i)
            choices.insert(i);
 
         MatrixXd centroids = MatrixXd::Zero(k, ndim);
-        unsigned long centroid_rows_chosen = 0;
-        unsigned int num_attempts = 0;
+        long centroid_rows_chosen = 0;
+        int num_attempts = 0;
 
 choose_row:
         while (centroid_rows_chosen < k && num_attempts <= MAX_ATTEMPTS) {
-            // try to find a unique centroid point.
+            // Try to find a unique centroid point.
             // The row indices are contained in the `choices` set.
             // Choose a random index of the *set* to then select a random *row index*
             ++num_attempts;
-            unsigned long rand_idx = std::experimental::randint((unsigned long) 0, choices.size());
-            unsigned long j = 0;  // is there an `enumerate` method for C++ iterators?
+            // NOTE: This conversion is reasonable because it's incredibly unlikely that the number 
+            // of rows in a matrix exceeds 4_294_967_295, the max value of a 32-bit integer.
+            long rand_idx = (long) std::experimental::randint((unsigned long) 0, choices.size());
+            // assert(rand_idx > 0);
+            long j = 0;  // is there an `enumerate` method for C++ iterators?
             for (auto key : choices) {
                 if (j == rand_idx) {
                     Eigen::MatrixXd centroid = data(key, Eigen::all);
                     // check currently-found centroids to see if this row is already present
-                    for (unsigned long row = 0; row < centroid_rows_chosen; ++row){
+                    for (long row = 0; row < centroid_rows_chosen; ++row){
                         // NOTE: Threshold can be decreased down to _eps if need be.
                         if (centroid.isApprox(centroids(row, Eigen::all), SMALLEST_THRESH)) {
                             // Ensure this key isn't chosen it again.
@@ -93,16 +93,14 @@ choose_row:
         }
 
         if (num_attempts > MAX_ATTEMPTS) {
-            // TODO:
-            // return error code?
-            // would need to change return type..
+            throw std::runtime_error("Could not generate centroids.");
         }
        
         return centroids;
     };
     
     /// Given data and labels, calculates centroids for a given cluster.
-    MatrixXd calculate_cluster_centroids(const MatrixXd& data, const VectorXi& labels, unsigned int k, unsigned int ndim) {
+    MatrixXd calculate_cluster_centroids(const MatrixXd& data, const VectorXi& labels, int k, int ndim) {
         MatrixXd centroids = Eigen::MatrixXd::Zero(k, ndim);
         VectorXi clust_count = Eigen::VectorXi::Zero(k);
         for (long i = 0; i < labels.size(); ++i) {
@@ -120,9 +118,9 @@ choose_row:
 
     const ClusterRet cluster(
             const MatrixXd& input_data,
-            unsigned int k,
-            unsigned int ndim,
-            unsigned int max_iterations,
+            int k,
+            int ndim,
+            int max_iterations,
             double threshold,
             MatrixXd initial_centroids
      ) {
@@ -136,8 +134,9 @@ choose_row:
         MatrixXd cluster_centroids;
 
         if (
+                max_iterations < 0 ||
                 threshold < SMALLEST_THRESH ||
-                ndim < 1 || ndim > (unsigned int) data.cols() ||
+                ndim < 1 || ndim > (int) data.cols() ||
                 k < 1 || k > data.rows()
         ) { return ClusterRet(OpStatus::InvalidInput); }
 
@@ -152,7 +151,7 @@ choose_row:
         
         bool success = false;
         VectorXi labels;
-        for (unsigned int count = 0; count < max_iterations; ++count) {
+        for (int count = 0; count < max_iterations; ++count) {
             labels = assign_labels(data, cluster_centroids);
             MatrixXd next_centroids = calculate_cluster_centroids(data, labels, k, ndim);
             Eigen::VectorXd centroid_motion = (next_centroids - cluster_centroids).rowwise().norm();
@@ -170,4 +169,4 @@ choose_row:
             return ClusterRet(labels, cluster_centroids, OpStatus::MaxIterationsExceeded);
         }
     }  // cluster
-} // namespace Classify
+}} // namespace Classify

@@ -5,10 +5,10 @@
 #ifndef EIGEN_DENSE
 #define EIGEN_DENSE
 #include <Eigen/Dense>
-#endif /* EIGEN_DENSE */
+#endif
 
-#ifndef STD_LIMITS
-#define STD_LIMITS
+#ifndef INCLUDED_STD_LIMITS
+#define INCLUDED_STD_LIMITS
 #include <limits>
 #endif
 
@@ -36,6 +36,8 @@ namespace Classify {
          *      The operation status.
          */
         using Eigen::MatrixXd; using Eigen::VectorXi;
+
+
         class ClusterRet {
             const VectorXi d_labels { VectorXi(0) }; 
             const MatrixXd d_centroids { MatrixXd(0, 0) };  // the resultant cluster centroids
@@ -67,7 +69,8 @@ namespace Classify {
          *
          *      initial_centroids
          *          Allows the user to provide an initial guess for the cluster centroids. If default value is used, the initial centroids are selected
-         *          randomly from among the input data. If the user *does* provide initial centroids, he/she should be sure all elements are unique.
+         *          randomly from among the input data. If the centroids cannot be generated within a set number of attempts, a runtime exception is thrown.
+         *          If the user *does* provide initial centroids, he/she should be sure all elements are unique.
          *          Checks are not performed for equivalence amongst rows.
          *
          *      ndim
@@ -84,21 +87,21 @@ namespace Classify {
          */
         const ClusterRet cluster(
                 const MatrixXd& data,
-                unsigned int k = 2,
-                unsigned int ndim = 1,
-                unsigned int max_iterations = 100,
+                int k = 2,
+                int ndim = 1,
+                int max_iterations = 100,
                 double threshold = 20*std::numeric_limits<double>::epsilon(),
                 MatrixXd initial_centroids = MatrixXd(0, 0)
          );
 
         /// Given input data, select elements of data to serve as initial means
-        MatrixXd choose_centroids(const MatrixXd& data, unsigned int k, unsigned int ndim);
+        MatrixXd choose_centroids(const MatrixXd& data, int k, int ndim);
         
         /// Given data and centroids, assign each data point a label. Labels range from [0..n)
         VectorXi assign_labels(const MatrixXd& data, const MatrixXd& centroids);
 
         /// Given data and labels, calculate the centroid of each cluster
-        MatrixXd calculate_cluster_centroids(const MatrixXd& data, const VectorXi& labels, unsigned int k, unsigned int ndim); 
+        MatrixXd calculate_cluster_centroids(const MatrixXd& data, const VectorXi& labels, int k, int ndim); 
     } // namespace KMeans
 } // namespace Classify
 
